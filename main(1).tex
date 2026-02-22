@@ -1,0 +1,88 @@
+\documentclass{spie}
+
+\usepackage{cite}
+
+\usepackage{times} % Times New Roman
+\usepackage{indentfirst} % Indent first paragraphs
+\usepackage{hyperref}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{amssymb}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{makecell}
+\usepackage{colortbl}
+\usepackage{xcolor}
+\usepackage{adjustbox}
+
+\usepackage[colorinlistoftodos,color=pink]{todonotes} % For fancy \todo{something}
+\usepackage{xkeyval}
+\presetkeys{todonotes}{inline}{}
+
+\usepackage{lipsum} % For lorem ipsum, remove this
+
+\newcommand{\fourier}{\mathcal{F}}
+
+\title{Medibot: A helpful assistant in Health care}
+
+\author{Peeyush Raj\supit{1}, Nitish Kumar\supit{1}		
+\\
+  \normalsize 
+  \supit{1} Amity University, Noida, India; \\
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This project is about making a medical chatbot named MediBot. It helps people by asking questions about their health problems and giving basic suggestions. MediBot is not a real doctor, but it gives early advice based on the symptoms shared by the user.
+We trained MediBot using a small language model called LLaMA 3.2–1B. To make training faster and use less memory, we used a technique called LoRA (Low-Rank Adaptation). We created a dataset with 2,100 conversations between a doctor and a patient. These conversations were divided into three groups: mild, moderate, and serious.
+Each conversation includes several questions and answers, a short summary, and a suggestion. The chatbot learns how to ask follow-up questions and give suggestions such as home remedies, over-the-counter medicine, or visiting a doctor.
+The training was done using Google Colab, and testing was done on a laptop with an RTX 4060 GPU. A simple chatbot interface was made using Gradio, so users can enter their symptoms and see the reply. This project shows that it is possible to make a helpful medical chatbot using small models and simple tools.
+  
+  \keywords{}
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+
+\section{Related Work}
+\label{sec:related}
+
+This paper \cite{tan2024fine} has dicussed.
+
+\section{Methodology}
+
+\section{Experiments}
+\subsection{Dataset}
+\subsubsection{Implementation Details}
+\subsection{Result and Dicussion}
+
+
+\section{Conclusion}
+
+
+\bibliographystyle{spiebib}
+\bibliography{bibliography}
+,
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Author information table (place right after the references)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\clearpage
+
+
+
+
+
+\end{document}

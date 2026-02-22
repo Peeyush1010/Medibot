@@ -1,0 +1,10 @@
+# Project info and instruction.
+I need to write a research paper or my current project that i did. The goal was to make a medical assistant chatbot. The assistant would ask few context aware questions to the patient and after few turns of conversation the assistant suggest what to do next. The suggestion involves seeing a doctor in severe and moderate cases or suggest some home remedy or non-prescribed medicine like paracetamol. The assistant is desined for india people so it would not suggest any foreign medicines.
+
+To build this assistant, we first created a context aware conversation between doctor and patient using chatGPT 4o (attached in project files) and then finetuned a smaller model: Llama2-7B model. 
+
+--------
+
+Our goal is to write a classy research paper out of this. Use deep research tool to write the literature review with references. I have also attached the latex template that i would like you to use. 
+
+-------

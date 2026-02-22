@@ -1,0 +1,145 @@
+pip install -U transformers datasets peft accelerate bitsandbytes einops
+
+import json
+
+# List of your uploaded files in Colab (make sure they exist in the file panel)
+file_paths = [
+    "mild.json",
+    "moderate.json",
+    "severe_medical_conversations_batch1.json"
+]
+
+# Load all conversations
+# all_conversations = []
+# for path in file_paths:
+#     with open(path, "r") as f:
+#         data = json.load(f)
+#         all_conversations.extend(data)
+
+# print(f"Loaded total {len(all_conversations)} conversations.")
+
+# Convert conversations into prompt-response examples for each assistant turn
+# formatted_samples = []
+
+# for conv in all_conversations:
+#     history = ""
+#     for i, turn in enumerate(conv["conversation"]):
+#         # After a patient speaks, the assistant should respond — that becomes our training pair
+#         if turn["role"] == "assistant" and i > 0:
+#             prompt = history.strip()
+#             response = turn["text"].strip()
+#             formatted_samples.append({
+#                 "prompt": prompt,
+#                 "response": response
+#             })
+#         prefix = "Assistant:" if turn["role"] == "assistant" else "Patient:"
+#         history += f"{prefix} {turn['text'].strip()}\n"
+
+# print(f"Created {len(formatted_samples)} assistant training samples.")
+
+# import json
+
+# with open("turn_by_turn_assistant_dataset.json", "w") as f:
+#     json.dump(formatted_samples, f, indent=2)
+
+# print("Saved training data as turn_by_turn_assistant_dataset.json")
+
+from huggingface_hub import login
+login()  # Enter your token here
+
+#model_id = "meta-llama/Llama-2-7b-chat-hf"
+model_id = "meta-llama/Llama-3.2-1B"
+
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+
+bnb_config = BitsAndBytesConfig(load_in_4bit=True) # load with less precision. Not good as full precision model.
+
+tokenizer = AutoTokenizer.from_pretrained(model_id, use_fast=True) # Loading tokenizer for Specific model. In this case it is Llamma - 7b
+tokenizer.pad_token = tokenizer.eos_token # padding with special token such as start and end. 
+
+model = AutoModelForCausalLM.from_pretrained(
+    model_id,
+    device_map="auto", # we can choose specific device depending on what we have (cpu, gpu)
+    quantization_config=bnb_config,
+    trust_remote_code=True # This is licenese verification for model_id
+)
+
+
+from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
+
+model = prepare_model_for_kbit_training(model)
+
+peft_config = LoraConfig(
+    r=4,
+    lora_alpha=16,
+    target_modules=["q_proj", "v_proj", "k_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+    lora_dropout=0.1, # Drop 10 % of the pararmeters randomly
+    bias="none",
+    task_type="CAUSAL_LM"
+)
+
+model = get_peft_model(model, peft_config)
+model.print_trainable_parameters()
+
+MAX_LENGTH = 1024  # LLaMA 2 supports up to 4096 # Runtime memory.
+# x is prompt and y is the response.
+def tokenize(example):
+    prompt = f"<s>[INST] {example['prompt']} [/INST] {example['response']}</s>"
+    return tokenizer(prompt, truncation=True, padding="max_length", max_length=MAX_LENGTH)
+
+from datasets import Dataset
+import json
+
+with open("turn_by_turn_assistant_dataset.json", "r") as f:
+    data = json.load(f)
+
+dataset = Dataset.from_list(data).train_test_split(test_size=0.1)
+tokenized_dataset = dataset.map(tokenize)
+
+from transformers import DataCollatorForLanguageModeling
+
+data_collator = DataCollatorForLanguageModeling(
+    tokenizer=tokenizer,
+    mlm=False  # This is causal LM
+)
+
+
+from transformers import TrainingArguments
+
+training_args = TrainingArguments(
+    output_dir="./llama2-lora-medbot",
+    num_train_epochs=3,
+    per_device_train_batch_size=4, # We can do ablation on the batch size to see the performance of the bot.
+    gradient_accumulation_steps=4, # 642 /4  ~ 160 steps.  Total number of steps in one epoch.
+    save_steps=100,
+    save_total_limit=2,
+    logging_steps=10,
+    eval_strategy="steps",
+    eval_steps=10, # Usually I would set it to 10.
+    learning_rate=2e-4, # 2 x 10^-4 = 0.0002.
+    bf16=True,  # Use bf16 on A100
+    optim="paged_adamw_32bit",
+    lr_scheduler_type="cosine",
+    warmup_steps=20,
+    weight_decay=0.01,
+    logging_dir="./logs",
+    report_to="none"
+)
+
+from transformers import Trainer
+
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    train_dataset=tokenized_dataset["train"],
+    eval_dataset=tokenized_dataset["test"],
+    tokenizer=tokenizer,
+    data_collator=data_collator
+)
+
+
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="torch.utils.checkpoint")
+warnings.filterwarnings("ignore")
+
+trainer.train()
